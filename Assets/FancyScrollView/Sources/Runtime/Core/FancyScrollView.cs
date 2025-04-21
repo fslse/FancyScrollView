@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace FancyScrollView
 {
@@ -22,7 +23,8 @@ namespace FancyScrollView
         /// <summary>
         /// セル同士の間隔.
         /// </summary>
-        [SerializeField, Range(1e-2f, 1f)] protected float cellInterval = 0.2f;
+        [SerializeField, Range(1e-2f, 1f)]
+        protected float cellInterval = 0.2f;
 
         /// <summary>
         /// スクロール位置の基準.
@@ -30,7 +32,8 @@ namespace FancyScrollView
         /// <remarks>
         /// たとえば、 <c>0.5</c> を指定してスクロール位置が <c>0</c> の場合, 中央に最初のセルが配置されます.
         /// </remarks>
-        [SerializeField, Range(0f, 1f)] protected float scrollOffset = 0.5f;
+        [SerializeField, Range(0f, 1f)]
+        protected float scrollOffset = 0.5f;
 
         /// <summary>
         /// セルを循環して配置させるどうか.
@@ -39,12 +42,14 @@ namespace FancyScrollView
         /// <c>true</c> にすると最後のセルの後に最初のセル, 最初のセルの前に最後のセルが並ぶようになります.
         /// 無限スクロールを実装する場合は <c>true</c> を指定します.
         /// </remarks>
-        [SerializeField] protected bool loop = false;
+        [SerializeField]
+        protected bool loop = false;
 
         /// <summary>
         /// セルの親要素となる <c>Transform</c>.
         /// </summary>
-        [SerializeField] protected Transform cellContainer = default;
+        [SerializeField]
+        protected Transform cellContainer = default;
 
         readonly IList<FancyCell<TItemData, TContext>> pool = new List<FancyCell<TItemData, TContext>>();
 
@@ -80,7 +85,9 @@ namespace FancyScrollView
         /// <remarks>
         /// 最初にセルが生成される直前に呼び出されます.
         /// </remarks>
-        protected virtual void Initialize() { }
+        protected virtual void Initialize()
+        {
+        }
 
         /// <summary>
         /// 渡されたアイテム一覧に基づいて表示内容を更新します.
@@ -108,6 +115,18 @@ namespace FancyScrollView
         /// <param name="position">スクロール位置.</param>
         protected virtual void UpdatePosition(float position) => UpdatePosition(position, false);
 
+        private readonly UnityEvent<float, float> onPositionChanged = new();
+
+        public void AddListener(UnityAction<float, float> action)
+        {
+            onPositionChanged.AddListener(action);
+        }
+
+        public void RemoveListener(UnityAction<float, float> action)
+        {
+            onPositionChanged.RemoveListener(action);
+        }
+
         void UpdatePosition(float position, bool forceRefresh)
         {
             if (!initialized)
@@ -115,6 +134,8 @@ namespace FancyScrollView
                 Initialize();
                 initialized = true;
             }
+
+            var oldPosition = currentPosition;
 
             currentPosition = position;
 
@@ -128,6 +149,8 @@ namespace FancyScrollView
             }
 
             UpdateCells(firstPosition, firstIndex, forceRefresh);
+
+            onPositionChanged?.Invoke(oldPosition, currentPosition);
         }
 
         void ResizePool(float firstPosition)
@@ -208,7 +231,9 @@ namespace FancyScrollView
     /// <summary>
     /// <see cref="FancyScrollView{TItemData}"/> のコンテキストクラス.
     /// </summary>
-    public sealed class NullContext { }
+    public sealed class NullContext
+    {
+    }
 
     /// <summary>
     /// スクロールビューを実装するための抽象基底クラス.
@@ -216,5 +241,7 @@ namespace FancyScrollView
     /// </summary>
     /// <typeparam name="TItemData"></typeparam>
     /// <seealso cref="FancyScrollView{TItemData, TContext}"/>
-    public abstract class FancyScrollView<TItemData> : FancyScrollView<TItemData, NullContext> { }
+    public abstract class FancyScrollView<TItemData> : FancyScrollView<TItemData, NullContext>
+    {
+    }
 }
